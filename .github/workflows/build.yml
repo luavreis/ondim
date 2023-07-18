@@ -53,15 +53,6 @@ jobs:
       - name: Install dependencies
         run: cabal build all --only-dependencies
 
-      # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
-      - name: Save cached dependencies
-        uses: actions/cache/save@v3
-        # Caches are immutable, trying to save with the same key would error.
-        if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
-        with:
-          path: ${{ steps.setup.outputs.cabal-store }}
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-
       - name: Build
         run: cabal build all
 
@@ -82,8 +73,7 @@ jobs:
       # Cache dependencies already here, so that we do not have to rebuild them should the subsequent steps fail.
       - name: Save cached dependencies (oldest)
         uses: actions/cache/save@v3
-        # Caches are immutable, trying to save with the same key would error.
-        if: ${{ steps.cache.outputs.cache-primary-key != steps.cache.outputs.cache-matched-key }}
+        if: ${{ always() }}
         with:
           path: ${{ steps.setup.outputs.cabal-store }}
           key: ${{ steps.cache.outputs.cache-primary-key }}
