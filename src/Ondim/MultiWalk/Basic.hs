@@ -83,10 +83,6 @@ instance Semigroup (Namespace m) where
 instance Monoid (Namespace m) where
   mempty = Namespace mempty
 
--- Conversions
-
-type Conversions = forall a b. TypeRep a -> TypeRep b -> a -> b
-
 -- * State data
 
 -- | Ondim's expansion state
