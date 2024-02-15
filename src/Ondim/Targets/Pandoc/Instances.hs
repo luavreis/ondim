@@ -8,6 +8,7 @@ import Data.Map qualified as Map
 import Data.Text qualified as T
 import Data.Typeable (eqT, type (:~:) (..))
 import Ondim
+import Ondim.Advanced
 import Ondim.Extra.Substitution (SAttr, SAttrs, SText, SubstConfig (..), getSAttributes)
 import Text.Pandoc.Builder qualified as B
 import Text.Pandoc.Definition
@@ -26,15 +27,15 @@ data MetaMapLift
 
 type MetaMapSub = Custom (Map Text MetaValue) MetaMapLift
 
-instance CanLift MetaMapSub where
-  liftSub (o :: Map Text MetaValue) =
+instance Expansible MetaMapSub where
+  expandSpec (o :: Map Text MetaValue) =
     Map.fromList <$> mapMaybeM go (Map.toList o)
     where
       go (k, v)
         | Just (k', '?') <- T.unsnoc k =
-            (Just . (k',) <$> liftSubstructures v)
+            (Just . (k',) <$> expandSubstructures v)
               `catchFailure` \_ _ _ _ -> return Nothing
-        | otherwise = Just . (k,) <$> liftSubstructures v
+        | otherwise = Just . (k,) <$> expandSubstructures v
 
 instance OndimNode Pandoc where
   type ExpTypes Pandoc = 'SpecList '[ToSpec (NL Block), ToSpec (Nesting Meta)]
@@ -60,7 +61,7 @@ instance OndimNode MetaValue where
   children (MetaMap o)
     | Just (MetaList a) <- Map.lookup "$args" o = a
   children _ = mempty
-  attributes (MetaMap o) = liftSub @PAttrs $ Map.foldrWithKey go [] o
+  attributes (MetaMap o) = expandSpec @PAttrs $ Map.foldrWithKey go [] o
     where
       go k (MetaString t) a = (k, t) : a
       go _ _ a = a
@@ -206,7 +207,7 @@ instance OndimNode Inline where
 
 -- Miscellaneous (from Text.Pandoc.Shared)
 
-stringify :: Walkable Inline a => a -> T.Text
+stringify :: (Walkable Inline a) => a -> T.Text
 stringify = query go
   where
     go :: Inline -> T.Text

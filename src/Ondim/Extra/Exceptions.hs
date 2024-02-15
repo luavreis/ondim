@@ -11,7 +11,7 @@ import Ondim
 import Ondim.Extra.Expansions (listExp)
 
 tryExp :: Monad m => GlobalExpansion m
-tryExp node = liftChildren node `catchFailure` \_ _ _ _ -> return []
+tryExp node = expandChildren node `catchFailure` \_ _ _ _ -> return []
 
 exceptionExp :: Monad m => OndimException -> ExpansionMap m
 exceptionExp exc@(OndimException e t) = do

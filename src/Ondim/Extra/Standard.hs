@@ -68,7 +68,7 @@ open node = do
   exps <- getNamespace name
   withoutExpansions [name] $
     case exps of
-      Right n -> withNamespace n $ liftChildren node
+      Right n -> withNamespace n $ expandChildren node
       Left e -> throwExpFailure @() name e
 
 with :: GlobalExpansion m
@@ -78,7 +78,7 @@ with node = do
     attributes node <&> map \(k, v) ->
       let expansion = lookupExpansion v exps
        in withoutExpansions [v] . withSomeExpansion k expansion
-  foldr ($) (liftChildren node) actions
+  foldr ($) (expandChildren node) actions
 
 {- | This expansion creates a new scope for the its children, in the sense that
  the inner state does not leak outside.
@@ -96,7 +96,7 @@ with node = do
 scope :: forall t m. (OndimNode t, Monad m) => Expansion m t
 scope node = do
   s <- getOndimS
-  liftChildren node <* putOndimS s
+  expandChildren node <* putOndimS s
 
 -- * Calling
 
@@ -115,7 +115,7 @@ bind node = do
   let strict = any (("strict" ==) . fst) attrs
   thing <-
     if strict
-      then liftChildren node
+      then expandChildren node
       else return $ children node
   case getSingleAttr "id" attrs of
     Just name -> do

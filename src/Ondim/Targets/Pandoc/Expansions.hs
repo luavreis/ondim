@@ -35,20 +35,20 @@ defaultState =
                 "one-paren" -> Just OneParen
                 "two-parens" -> Just TwoParens
                 _ -> Nothing
-            nodes <- liftChildren node
+            nodes <- expandChildren node
             let attrs = (fromMaybe 1 start, fromMaybe DefaultStyle style, fromMaybe DefaultDelim delim)
                 child = (`mapMaybe` nodes) \case
                   Div ("list.item", _, _) blks -> Just blks
                   _ -> Nothing
             return [OrderedList attrs child]
           "bullet-list" ## \(node :: Block) -> do
-            nodes <- liftChildren node
+            nodes <- expandChildren node
             let child = (`mapMaybe` nodes) \case
                   Div ("list.item", _, _) blks -> Just blks
                   _ -> Nothing
             return [BulletList child]
           "definition-list" ## \(node :: Block) -> do
-            nodes <- liftChildren node
+            nodes <- expandChildren node
             let child = (`mapMaybe` nodes) \case
                   Div
                     ("list.item", _, _)

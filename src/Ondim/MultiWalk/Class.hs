@@ -5,7 +5,7 @@
 
 module Ondim.MultiWalk.Class
   ( OndimNode (..),
-    CanLift (..),
+    Expansible (..),
     Substructure (..),
     ondimCast,
   ) where
@@ -19,8 +19,8 @@ import {-# SOURCE #-} Ondim.MultiWalk.Combinators
 
 -- * CanLift class
 
-class CanLift (s :: Type) where
-  liftSub ::
+class Expansible (s :: Type) where
+  expandSpec ::
     Monad m =>
     Carrier s ->
     Ondim m (Carrier s)
@@ -40,8 +40,8 @@ instance {-# OVERLAPPABLE #-} Substructure target needle where
 
 class
   ( HasSub GSubTag (ExpTypes t) t,
-    AllMods CanLift (ExpTypes t),
-    CanLift (NodeListSpec t),
+    AllMods Expansible (ExpTypes t),
+    Expansible (NodeListSpec t),
     Carrier (NodeListSpec t) ~ [t],
     OndimCast t
   ) =>

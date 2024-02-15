@@ -6,20 +6,22 @@ import Control.Monad (liftM2)
 import Data.Text qualified as T
 import Data.Typeable (eqT, (:~:) (..))
 import Ondim
+import Data.Text.Builder.Linear
+import Ondim.Advanced
 
 data Node
-  = Command Text [([Node], [Node])] [Node]
-  | Text Text
-  | Comment Text
+  = Command !Text ![([Node], [Node])] ![Node]
+  | Text !Text
+  | Comment !Text
   deriving (Eq, Ord, Show, Generic, NFData)
 
-renderLaTeX :: [Node] -> Text
-renderLaTeX = foldMap go
+renderLaTeX :: [Node] -> Builder
+renderLaTeX = foldMap' go
   where
     go = \case
-      Command _ _ n -> foldMap go n
-      Text t -> t
-      Comment t -> "%" <> t
+      Command _ _ n -> foldMap' go n
+      Text t -> fromText t
+      Comment t -> fromChar '%' <> fromText t
 
 escapeLaTeX :: Text -> Text
 escapeLaTeX = T.concatMap \case
@@ -48,25 +50,26 @@ instance OndimNode Node where
     forM pairs \(k, v) ->
       liftM2
         (,)
-        (renderLaTeX <$> liftNodes k)
-        (renderLaTeX <$> liftNodes v)
+        (runBuilder . renderLaTeX <$> expandNodes k)
+        (runBuilder . renderLaTeX <$> expandNodes v)
   attributes _ = pure []
   identify = \case
     Command t _ _ -> Just t
-    _ -> Nothing
+    Text {} -> Nothing
+    Comment {} -> Nothing
   castFrom (_ :: Proxy t)
     | Just Refl <- eqT @t @Text = Just $ one . Text
     | otherwise = Nothing
-  nodeAsText = Just $ renderLaTeX . one
-  renderNode = (encodeUtf8 .) <$> nodeAsText
+  nodeAsText = Just $ runBuilder . renderLaTeX . one
+  renderNode = Just $ toLazy . runBuilderBS . renderLaTeX . one
 
 type NodeWithSep = Custom [Node] Void
 
-instance CanLift NodeWithSep where
-  liftSub = foldr go (pure [])
+instance Expansible NodeWithSep where
+  expandSpec = foldr go (pure [])
     where
       go i@(Command "sep" _ _) x = (i :) <$> x
-      go i x = liftA2 (++?) (liftNode i) x
+      go i x = liftA2 (++?) (expandNode i) x
 
       xs ++? ys = foldr cons ys xs
 

@@ -4,6 +4,7 @@ module Ondim.Targets.Whiskers.Instances where
 
 import Data.Typeable (eqT, (:~:) (..))
 import Ondim
+import Ondim.Advanced
 import Ondim.Extra.Substitution (SubstConfig (..), getSAttributes)
 
 data Node

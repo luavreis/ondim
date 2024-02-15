@@ -12,8 +12,7 @@ lookupAttr' ::
   Ondim m Text
 lookupAttr' key node =
   maybe (throwTemplateError $ "Missing '" <> key <> "' argument.") pure
-    . L.lookup key
-    =<< attributes node
+    =<< lookupAttr key node
 
 getSingleAttr :: Text -> [Attribute] -> Maybe Text
 getSingleAttr name attrs = L.lookup name attrs <|> viaNonEmpty (fst . head) attrs
@@ -58,7 +57,7 @@ listList f list node = do
       Just name -> do
         exps <- getExpansion name
         either (throwExpFailure @t name) return exps
-      Nothing -> return liftChildren
+      Nothing -> return expandChildren
   intercalateWith <- lookupAttr "intercalate" node
   let inter txt
         | Just cast <- ondimCast = intercalate (cast txt)
@@ -110,8 +109,8 @@ ifElse cond node = do
         maybe [] children $
           find (identifiesAs ["else"]) els
   if cond
-    then liftNodes yes
-    else liftNodes no
+    then expandNodes yes
+    else expandNodes no
 {-# INLINEABLE ifElse #-}
 
 -- * Text
@@ -131,7 +130,7 @@ switchWithDefault tag node = do
       else return False
   fromMaybe (pure []) do
     child <- match <|> find (identifiesAs ["default"]) els
-    pure $ liftChildren child
+    pure $ expandChildren child
   where
     findM p = foldr (\x -> ifM (p x) (pure $ Just x)) (pure Nothing)
 
@@ -155,7 +154,7 @@ renderExp f node = do
         Just render ->
           case ondimCast of
             Just cast -> do
-              x' <- liftSubstructures x
+              x' <- expandSubstructures x
               let t = decodeUtf8 @Text (render x')
               return $ cast t
             Nothing -> noCast

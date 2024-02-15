@@ -20,7 +20,8 @@ import Type.Reflection (SomeTypeRep, TypeRep, someTypeRep)
 -- * Monad
 
 newtype Ondim m a = Ondim
-  { unOndimT :: ReaderT TraceData (StateT (OndimState m) (ExceptT OndimException m)) a
+  { unOndimT :: ReaderT
+    TraceData (StateT (OndimState m) (ExceptT OndimException m)) a
   }
   deriving newtype (Functor, Applicative, Monad, MonadIO)
 

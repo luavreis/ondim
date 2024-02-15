@@ -14,6 +14,7 @@ import Data.Text qualified as T
 import Data.Typeable (eqT, (:~:) (..))
 import GHC.TypeLits (KnownChar, charVal)
 import Ondim
+import Ondim.Advanced
 
 data SubstConfig
   = SubstConfig
@@ -34,8 +35,8 @@ data SubstLift (c :: SubstConfig)
 
 type SText (c :: SubstConfig) = Custom Text (SubstLift c)
 
-instance (KnownConfig c) => CanLift (SText c) where
-  liftSub (t :: Text) = go t
+instance (KnownConfig c) => Expansible (SText c) where
+  expandSpec (t :: Text) = go t
     where
       (s, a, b) = substConfigVal (Proxy @c)
       go text = do
@@ -83,14 +84,14 @@ type SAttrs (c :: SubstConfig) = Converting [(Text, Text)] (NL (SAttrData c))
 
 type LiftSAttrsWithTry' (c :: SubstConfig) = Custom [SAttrData c] (SubstLift c)
 
-instance KnownConfig c => CanLift (LiftSAttrsWithTry' c) where
-  liftSub = foldMapM go
+instance KnownConfig c => Expansible (LiftSAttrsWithTry' c) where
+  expandSpec = foldMapM go
     where
       go x@(coerce -> (k, v :: Text))
         | Just (k', '?') <- T.unsnoc k =
-            liftNode @(SAttrData c) (coerce (k', v))
+            expandNode @(SAttrData c) (coerce (k', v))
               `catchFailure` \_ _ _ _ -> return []
-        | otherwise = liftNode x
+        | otherwise = expandNode x
 
 getSAttributes ::
   forall c m t.
@@ -101,4 +102,4 @@ getSAttributes ::
   ) =>
   t ->
   Ondim m [(Text, Text)]
-getSAttributes = fmap coerce . liftNodes . getSubstructure @(SAttrData c)
+getSAttributes = fmap coerce . expandNodes . getSubstructure @(SAttrData c)

@@ -48,6 +48,7 @@ library
   -- LANGUAGE extensions used by modules in this package.
   exposed-modules:
     Ondim
+    Ondim.Advanced
     Ondim.Extra.Exceptions
     Ondim.Extra.Expansions
     Ondim.Extra.Loading
@@ -59,8 +60,8 @@ library
     Ondim.MultiWalk.Class
     Ondim.MultiWalk.Combinators
     Ondim.MultiWalk.Core
-    Ondim.MultiWalk.State
     Ondim.MultiWalk.Substructure
+    Ondim.State
 
   build-depends:
     , base                  >=4.14  && <5
@@ -125,7 +126,10 @@ library
       Ondim.Targets.Whiskers.Load
 
   if flag(with-latex)
-    build-depends:   megaparsec
+    build-depends:
+      , megaparsec
+      , text-builder-linear
+
     other-modules:   Ondim.Targets.LaTeX.Parser
     exposed-modules:
       Ondim.Targets.LaTeX

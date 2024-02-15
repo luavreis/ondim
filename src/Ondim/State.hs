@@ -1,6 +1,6 @@
 {-# LANGUAGE RankNTypes #-}
 
-module Ondim.MultiWalk.State
+module Ondim.State
   ( -- Manipulate the whole state
     getOndimS,
     modifyOndimS,
@@ -58,17 +58,17 @@ import Type.Reflection (typeRep)
 
 -- State manipulation
 
-getOndimS :: Monad m => Ondim m (OndimState m)
+getOndimS :: (Monad m) => Ondim m (OndimState m)
 getOndimS = Ondim get
 
-modifyOndimS :: Monad m => (OndimState m -> OndimState m) -> Ondim m ()
+modifyOndimS :: (Monad m) => (OndimState m -> OndimState m) -> Ondim m ()
 modifyOndimS = Ondim . modify'
 
-putOndimS :: Monad m => OndimState m -> Ondim m ()
+putOndimS :: (Monad m) => OndimState m -> Ondim m ()
 putOndimS = Ondim . put
 
 withSomeExpansion ::
-  Monad m =>
+  (Monad m) =>
   Text ->
   Maybe (SomeExpansion m) ->
   Ondim m a ->
@@ -81,16 +81,16 @@ withSomeExpansion name ex st = do
     insOrDel = maybe (deleteExpansion name) (insertExpansion name)
 
 -- | "Bind" new namespace locally.
-withNamespace :: Monad m => Namespace m -> Ondim m a -> Ondim m a
+withNamespace :: (Monad m) => Namespace m -> Ondim m a -> Ondim m a
 withNamespace (Namespace exps) o =
   foldr (\(k, v) -> withSomeExpansion k (Just v)) o (HMap.toList exps)
 
 -- | "Unbind" many expansions locally.
-withoutExpansions :: Monad m => [Text] -> Ondim m a -> Ondim m a
+withoutExpansions :: (Monad m) => [Text] -> Ondim m a -> Ondim m a
 withoutExpansions names o = foldr (`withSomeExpansion` Nothing) o names
 
 -- | Put a new expansion into the local state, modifying the scope.
-putSomeExpansion :: Monad m => Text -> SomeExpansion m -> Ondim m ()
+putSomeExpansion :: (Monad m) => Text -> SomeExpansion m -> Ondim m ()
 putSomeExpansion key ex =
   modifyOndimS \s -> s {expansions = insertExpansion key ex (expansions s)}
 
@@ -120,7 +120,7 @@ name #: ex = name #<> Just ex
 someExpansion :: (HasCallStack, Typeable t) => Expansion m t -> SomeExpansion m
 someExpansion = SomeExpansion typeRep callStackSite
 
-someExpansion' :: Typeable t => DefinitionSite -> Expansion m t -> SomeExpansion m
+someExpansion' :: (Typeable t) => DefinitionSite -> Expansion m t -> SomeExpansion m
 someExpansion' = SomeExpansion typeRep
 
 infixr 0 ##
@@ -139,7 +139,7 @@ infixr 0 #%
 (#%) :: (HasCallStack, OndimNode a) => Text -> a -> ExpansionMap m
 name #% ex = name #: templateData ex
 
-textData :: HasCallStack => Text -> SomeExpansion m
+textData :: (HasCallStack) => Text -> SomeExpansion m
 textData = templateData
 
 textData' :: DefinitionSite -> Text -> SomeExpansion m
@@ -147,10 +147,10 @@ textData' = templateData'
 
 infixr 0 #@
 
-(#@) :: HasCallStack => Text -> Text -> ExpansionMap m
+(#@) :: (HasCallStack) => Text -> Text -> ExpansionMap m
 name #@ ex = name #% ex
 
-globalExpansion :: HasCallStack => GlobalExpansion m -> SomeExpansion m
+globalExpansion :: (HasCallStack) => GlobalExpansion m -> SomeExpansion m
 globalExpansion = GlobalExpansion callStackSite
 
 globalExpansion' :: DefinitionSite -> GlobalExpansion m -> SomeExpansion m
@@ -158,7 +158,7 @@ globalExpansion' = GlobalExpansion
 
 infixr 0 #*
 
-(#*) :: HasCallStack => Text -> GlobalExpansion m -> ExpansionMap m
+(#*) :: (HasCallStack) => Text -> GlobalExpansion m -> ExpansionMap m
 name #* ex = name #: globalExpansion ex
 
 mapToNamespace :: ExpansionMap m -> Namespace m
@@ -178,9 +178,11 @@ infixr 0 #.
 (#.) :: Text -> ExpansionMap m -> ExpansionMap m
 name #. ex = name #: namespace ex
 
--- | Infix version of @withExpansions@ to bind using MapSyntax.
+{- | Infix version of @withExpansions@ meant to bind expansions more conveniently
+by using @ExpansionMap@s.
+-}
 binding ::
-  Monad m =>
+  (Monad m) =>
   Ondim m a ->
   ExpansionMap m ->
   Ondim m a
@@ -209,8 +211,11 @@ insertExpansion' keys e (Namespace es) = Namespace $ go keys es
     go [] = id
     go [k] = HMap.insert k e
     go (k : ks) =
-      flip HMap.alter k $
-        Just . NamespaceData . Namespace . \case
+      flip HMap.alter k
+        $ Just
+        . NamespaceData
+        . Namespace
+        . \case
           Just (NamespaceData (Namespace n)) -> go ks n
           _ -> go ks mempty
 
