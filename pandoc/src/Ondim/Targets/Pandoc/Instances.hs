@@ -9,7 +9,8 @@ import Data.Text qualified as T
 import Data.Typeable (eqT, type (:~:) (..))
 import Ondim
 import Ondim.Advanced
-import Ondim.Extra.Substitution (SAttr, SAttrs, SText, SubstConfig (..), getSAttributes)
+import Ondim.Advanced.Substitution (SAttr, SAttrs, SText, SubstConfig (..), getSAttributes)
+import Ondim.Debug
 import Text.Pandoc.Builder qualified as B
 import Text.Pandoc.Definition
 import Text.Pandoc.Walk

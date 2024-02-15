@@ -10,7 +10,8 @@ import Data.Text qualified as T
 import Data.Typeable (eqT, (:~:) (..))
 import Ondim
 import Ondim.Advanced
-import Ondim.Extra.Substitution (SAttr, SAttrs, SText, SubstConfig (..))
+import Ondim.Debug
+import Ondim.Advanced.Substitution (SAttr, SAttrs, SText, SubstConfig (..))
 
 type ASConfig = 'SubstConfig '$' '{' '}'
 type AesonText = SText ASConfig

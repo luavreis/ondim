@@ -2,7 +2,7 @@
 
 module Ondim.Targets.Pandoc.Load where
 
-import Ondim.Extra.Loading (LoadConfig (..), loadFnSimple)
+import Ondim.Loading (LoadConfig (..), loadFnSimple)
 import Ondim.Targets.Pandoc.Expansions (defaultState)
 import Ondim.Targets.Pandoc.Instances ()
 import Text.Pandoc.Class (runPure)

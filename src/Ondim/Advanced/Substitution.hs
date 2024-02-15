@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-module Ondim.Extra.Substitution
+module Ondim.Advanced.Substitution
   ( SubstConfig (..),
     SText,
     SAttr,
@@ -15,15 +15,16 @@ import Data.Typeable (eqT, (:~:) (..))
 import GHC.TypeLits (KnownChar, charVal)
 import Ondim
 import Ondim.Advanced
+import Ondim.Debug
 
 data SubstConfig
   = SubstConfig
+      -- | Start
       Char
-      -- ^ Start
+      -- | Opening delimiter
       Char
-      -- ^ Opening delimiter
+      -- | Closing delimiter
       Char
-      -- ^ Closing delimiter
 
 class (Typeable c) => KnownConfig (c :: SubstConfig) where
   substConfigVal :: Proxy c -> (Char, Char, Char)
@@ -84,7 +85,7 @@ type SAttrs (c :: SubstConfig) = Converting [(Text, Text)] (NL (SAttrData c))
 
 type LiftSAttrsWithTry' (c :: SubstConfig) = Custom [SAttrData c] (SubstLift c)
 
-instance KnownConfig c => Expansible (LiftSAttrsWithTry' c) where
+instance (KnownConfig c) => Expansible (LiftSAttrsWithTry' c) where
   expandSpec = foldMapM go
     where
       go x@(coerce -> (k, v :: Text))

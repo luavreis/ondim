@@ -13,7 +13,7 @@ import Lucid.Base qualified as L
 import Lucid.Html5 qualified as L
 import Ondim
 import Ondim.Advanced
-import Ondim.Extra.Substitution (SAttr, SAttrs, SText, SubstConfig (..), getSAttributes)
+import Ondim.Advanced.Substitution (SAttr, SAttrs, SText, SubstConfig (..), getSAttributes)
 import Text.XML qualified as X
 
 type HSConfig = 'SubstConfig '$' '{' '}'
@@ -49,8 +49,8 @@ data HtmlElement = HtmlElement
 
 toHtmlElement :: X.Element -> HtmlElement
 toHtmlElement (X.Element name attrs nodes) =
-  HtmlElement False (X.nameLocalName name) (map (first X.nameLocalName) $ Map.toList attrs)
-    $ toHtmlNodes nodes
+  HtmlElement False (X.nameLocalName name) (map (first X.nameLocalName) $ Map.toList attrs) $
+    toHtmlNodes nodes
 
 voidElems :: Set.Set Text
 voidElems = Set.fromAscList $ T.words "area base br col command embed hr img input keygen link meta param source track wbr"

@@ -4,6 +4,7 @@ module Ondim.Extra.Expansions where
 import Data.List qualified as L
 import Data.Map qualified as Map
 import Ondim
+import Ondim.Debug
 
 lookupAttr' ::
   (Monad m, OndimNode t) =>
@@ -27,16 +28,16 @@ getSingleAttr' name node =
     . getSingleAttr name
     =<< attributes node
 
-identifiesAs :: OndimNode t => [Text] -> t -> Bool
+identifiesAs :: (OndimNode t) => [Text] -> t -> Bool
 identifiesAs n = (Just n ==) . fmap splitExpansionKey . identify
 
 -- * Lists
 
 listExp ::
-  Monad m =>
-  (a -> SomeExpansion m) ->
+  (Monad m) =>
+  (a -> NamespaceItem m) ->
   [a] ->
-  ExpansionMap m
+  NamespaceMap m
 listExp f list = do
   "size" #@ show $ length list
   unless (null list) $ "nonempty" #@ "true"
@@ -46,7 +47,7 @@ listExp f list = do
 listList ::
   forall a m t.
   (OndimNode t, Monad m) =>
-  (a -> SomeExpansion m) ->
+  (a -> NamespaceItem m) ->
   [a] ->
   Expansion m t
 listList f list node = do
@@ -71,10 +72,10 @@ listList f list node = do
 -- * Assocs and maps
 
 assocsExp ::
-  Monad m =>
-  (v -> SomeExpansion m) ->
+  (Monad m) =>
+  (v -> NamespaceItem m) ->
   [(Text, v)] ->
-  ExpansionMap m
+  NamespaceMap m
 assocsExp vf obj = do
   "size" #@ show $ length obj
   unless (null obj) $ "nonempty" #@ "true"
@@ -89,10 +90,10 @@ assocsExp vf obj = do
         "value" #: vf v
 
 mapExp ::
-  Monad m =>
-  (v -> SomeExpansion m) ->
+  (Monad m) =>
+  (v -> NamespaceItem m) ->
   Map Text v ->
-  ExpansionMap m
+  NamespaceMap m
 mapExp vf obj = assocsExp vf (Map.toList obj)
 
 -- * Booleans

@@ -13,10 +13,11 @@ module Ondim.Extra.Standard
 
 import Data.Text qualified as T
 import Ondim
+import Ondim.Debug
 import Ondim.Extra.Exceptions (tryExp)
 import Ondim.Extra.Expansions
 
-standardMap :: ExpansionMap m
+standardMap :: NamespaceMap m
 standardMap = do
   -- Control flow
   "if" #* ifBound
@@ -35,7 +36,7 @@ standardMap = do
 
 -- * Control flow
 
-ifBound :: forall t m. (OndimNode t, Monad m) => Expansion m t
+ifBound :: PolyExpansion m
 ifBound node = do
   attrs <- T.split (== ',') <$> getSingleAttr' "id" node
   bound <- allM exists attrs
@@ -43,7 +44,7 @@ ifBound node = do
   where
     exists n = isJust . lookupExpansion n . expansions <$> getOndimS
 
-anyBound :: forall t m. (OndimNode t, Monad m) => Expansion m t
+anyBound :: PolyExpansion m
 anyBound node = do
   attrs <- fst <<$>> attributes node
   bound <- anyM exists attrs
@@ -51,18 +52,18 @@ anyBound node = do
   where
     exists n = isJust . lookupExpansion n . expansions <$> getOndimS
 
-matchBound :: GlobalExpansion m
+matchBound :: PolyExpansion m
 matchBound node = do
   tag <- getSingleAttr' "id" node
   tagC <- getText tag
   switchWithDefault (rightToMaybe tagC) node
 
-ignore :: forall t m. Monad m => Expansion m t
+ignore :: PolyExpansion m
 ignore = const $ pure []
 
 -- * Environment
 
-open :: GlobalExpansion m
+open :: PolyExpansion m
 open node = do
   name <- getSingleAttr' "id" node
   exps <- getNamespace name
@@ -71,7 +72,7 @@ open node = do
       Right n -> withNamespace n $ expandChildren node
       Left e -> throwExpFailure @() name e
 
-with :: GlobalExpansion m
+with :: PolyExpansion m
 with node = do
   exps <- expansions <$> getOndimS
   actions <-
@@ -93,14 +94,14 @@ with node = do
    >   <animal-entry />
    > <scope/>
 -}
-scope :: forall t m. (OndimNode t, Monad m) => Expansion m t
+scope :: PolyExpansion m
 scope node = do
   s <- getOndimS
   expandChildren node <* putOndimS s
 
 -- * Calling
 
-call :: GlobalExpansion m
+call :: PolyExpansion m
 call node = do
   name <- getSingleAttr' "id" node
   callExpansion name node
@@ -108,7 +109,7 @@ call node = do
 -- * Binding
 
 -- | This expansion works like Heist's `bind` splice
-bind :: HasCallStack => GlobalExpansion m
+bind :: (HasCallStack) => PolyExpansion m
 bind node = do
   attrs <- attributes node
   defSite <- getCurrentSite

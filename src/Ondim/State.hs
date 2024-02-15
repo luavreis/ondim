@@ -1,42 +1,56 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Ondim.State
-  ( -- Manipulate the whole state
+  ( -- * Namespace maps
+
+    NamespaceMap,
+    binding,
+    mapToNamespace,
+    (#:),
+    unbind,
+
+    -- ** Typed expansions
+    (##),
+    typedExpansion,
+    typedExpansion',
+
+    -- ** Polymorphic expansions
+    (#*),
+    polyExpansion,
+    polyExpansion',
+
+    -- ** Templates
+    (#%),
+    templateData,
+    templateData',
+
+    -- ** Textual templates
+    (#@),
+    textData,
+    textData',
+
+    -- ** Namespaces
+    (#.),
+    namespace,
+    namespace',
+
+    -- * Datatypes
+    OndimState (..),
+    NamespaceItem,
+    Namespace,
+
+    -- ** Manipulate the whole state
     getOndimS,
     modifyOndimS,
     putOndimS,
-    -- Modify parts of the state
+
+    -- ** Modify parts of the state
     withSomeExpansion,
     putSomeExpansion,
     withoutExpansions,
     withNamespace,
 
-    -- * Expansion and Filter maps
-    (#<>),
-    unbind,
-    -- Expansion map
-    ExpansionMap,
-    mapToNamespace,
-    binding,
-    -- Expansion constructors
-    (#:),
-    someExpansion,
-    someExpansion',
-    (##),
-    templateData,
-    templateData',
-    (#%),
-    textData,
-    textData',
-    (#@),
-    globalExpansion,
-    globalExpansion',
-    (#*),
-    namespace,
-    namespace',
-    (#.),
-
-    -- * Altering namespaces
+    -- ** Altering namespaces
     splitExpansionKey,
     lookupExpansion,
     insertExpansion,
@@ -70,7 +84,7 @@ putOndimS = Ondim . put
 withSomeExpansion ::
   (Monad m) =>
   Text ->
-  Maybe (SomeExpansion m) ->
+  Maybe (NamespaceItem m) ->
   Ondim m a ->
   Ondim m a
 withSomeExpansion name ex st = do
@@ -90,110 +104,123 @@ withoutExpansions :: (Monad m) => [Text] -> Ondim m a -> Ondim m a
 withoutExpansions names o = foldr (`withSomeExpansion` Nothing) o names
 
 -- | Put a new expansion into the local state, modifying the scope.
-putSomeExpansion :: (Monad m) => Text -> SomeExpansion m -> Ondim m ()
+putSomeExpansion :: (Monad m) => Text -> NamespaceItem m -> Ondim m ()
 putSomeExpansion key ex =
   modifyOndimS \s -> s {expansions = insertExpansion key ex (expansions s)}
 
--- Expansion and Filter maps
-
 infixr 0 #<>
 
-(#<>) :: Text -> Maybe (SomeExpansion m) -> ExpansionMap m
-name #<> ex = ExpansionMapM $ modify' ((name, ex) :)
+(#<>) :: Text -> Maybe (NamespaceItem m) -> NamespaceMap m
+name #<> ex = NamespaceMapM $ modify' ((name, ex) :)
 
-unbind :: Text -> ExpansionMap m
+unbind :: Text -> NamespaceMap m
 unbind k = k #<> Nothing
 
 -- Expansions
 
-newtype ExpansionMapM m a = ExpansionMapM (State [(Text, Maybe (SomeExpansion m))] a)
+newtype NamespaceMapM m a = NamespaceMapM (State [(Text, Maybe (NamespaceItem m))] a)
   deriving newtype (Functor, Applicative, Monad)
 
-type ExpansionMap m = ExpansionMapM m ()
+{- | 'NamespaceMap' provides a monad interface for defining namespaces
+   declaratively. You should enable the @BlockArguments@ extension when using
+   it. For instance:
 
+@
+'Ondim.expandChildren' myNode
+  \`'binding'\` do
+    "something" '##' myTypedExp
+    "is-cow" '#*' ifElse isCow
+    "name" '#@' \"Joana\"
+    "properties" '#.' do
+      "age" '#@' show age
+      "state" '#@' "hungry"
+@
+-}
+type NamespaceMap m = NamespaceMapM m ()
 
 infixr 0 #:
 
-(#:) :: Text -> SomeExpansion m -> ExpansionMap m
+(#:) :: Text -> NamespaceItem m -> NamespaceMap m
 name #: ex = name #<> Just ex
 
-someExpansion :: (HasCallStack, Typeable t) => Expansion m t -> SomeExpansion m
-someExpansion = SomeExpansion typeRep callStackSite
+typedExpansion :: (HasCallStack, Typeable t) => Expansion m t -> NamespaceItem m
+typedExpansion = TypedExpansion typeRep callStackSite
 
-someExpansion' :: (Typeable t) => DefinitionSite -> Expansion m t -> SomeExpansion m
-someExpansion' = SomeExpansion typeRep
+typedExpansion' :: (Typeable t) => DefinitionSite -> Expansion m t -> NamespaceItem m
+typedExpansion' = TypedExpansion typeRep
 
 infixr 0 ##
 
-(##) :: (HasCallStack, Typeable t) => Text -> Expansion m t -> ExpansionMap m
-name ## ex = name #: someExpansion ex
+(##) :: (HasCallStack, Typeable t) => Text -> Expansion m t -> NamespaceMap m
+name ## ex = name #: typedExpansion ex
 
-templateData :: forall a m. (HasCallStack, OndimNode a) => a -> SomeExpansion m
+templateData :: forall a m. (HasCallStack, OndimNode a) => a -> NamespaceItem m
 templateData = Template typeRep callStackSite
 
-templateData' :: forall a m. (HasCallStack, OndimNode a) => DefinitionSite -> a -> SomeExpansion m
+templateData' :: forall a m. (HasCallStack, OndimNode a) => DefinitionSite -> a -> NamespaceItem m
 templateData' = Template typeRep
 
 infixr 0 #%
 
-(#%) :: (HasCallStack, OndimNode a) => Text -> a -> ExpansionMap m
+(#%) :: (HasCallStack, OndimNode a) => Text -> a -> NamespaceMap m
 name #% ex = name #: templateData ex
 
-textData :: (HasCallStack) => Text -> SomeExpansion m
+textData :: (HasCallStack) => Text -> NamespaceItem m
 textData = templateData
 
-textData' :: DefinitionSite -> Text -> SomeExpansion m
+textData' :: DefinitionSite -> Text -> NamespaceItem m
 textData' = templateData'
 
 infixr 0 #@
 
-(#@) :: (HasCallStack) => Text -> Text -> ExpansionMap m
+(#@) :: (HasCallStack) => Text -> Text -> NamespaceMap m
 name #@ ex = name #% ex
 
-globalExpansion :: (HasCallStack) => GlobalExpansion m -> SomeExpansion m
-globalExpansion = GlobalExpansion callStackSite
+polyExpansion :: (HasCallStack) => PolyExpansion m -> NamespaceItem m
+polyExpansion = PolyExpansion callStackSite
 
-globalExpansion' :: DefinitionSite -> GlobalExpansion m -> SomeExpansion m
-globalExpansion' = GlobalExpansion
+polyExpansion' :: DefinitionSite -> PolyExpansion m -> NamespaceItem m
+polyExpansion' = PolyExpansion
 
 infixr 0 #*
 
-(#*) :: (HasCallStack) => Text -> GlobalExpansion m -> ExpansionMap m
-name #* ex = name #: globalExpansion ex
+(#*) :: (HasCallStack) => Text -> PolyExpansion m -> NamespaceMap m
+name #* ex = name #: polyExpansion ex
 
-mapToNamespace :: ExpansionMap m -> Namespace m
-mapToNamespace (ExpansionMapM ex) = foldl' go mempty exps
+-- | Runs the 'NamespaceMap' monad to get a 'Namespace'.
+mapToNamespace :: NamespaceMap m -> Namespace m
+mapToNamespace (NamespaceMapM ex) = foldl' go mempty exps
   where
     go = flip $ uncurry insertExpansion
     exps = mapMaybe sequence $ execState ex []
 
-namespace :: ExpansionMap m -> SomeExpansion m
+namespace :: NamespaceMap m -> NamespaceItem m
 namespace = NamespaceData . mapToNamespace
 
-namespace' :: Namespace m -> SomeExpansion m
+namespace' :: Namespace m -> NamespaceItem m
 namespace' = NamespaceData
 
 infixr 0 #.
 
-(#.) :: Text -> ExpansionMap m -> ExpansionMap m
+(#.) :: Text -> NamespaceMap m -> NamespaceMap m
 name #. ex = name #: namespace ex
 
-{- | Infix version of @withExpansions@ meant to bind expansions more conveniently
-by using @ExpansionMap@s.
+{- | Infix version of 'withNamespace' meant to bind expansions more conveniently
+   by using 'NamespaceMap's.
 -}
 binding ::
   (Monad m) =>
   Ondim m a ->
-  ExpansionMap m ->
+  NamespaceMap m ->
   Ondim m a
-binding o (ExpansionMapM exps) =
+binding o (NamespaceMapM exps) =
   let kvs = execState exps []
    in foldl' (flip $ uncurry withSomeExpansion) o kvs
 
 splitExpansionKey :: Text -> [Text]
 splitExpansionKey = T.split (\c -> c /= '-' && not (isLetter c))
 
-lookupExpansion' :: [Text] -> Namespace m -> Maybe (SomeExpansion m)
+lookupExpansion' :: [Text] -> Namespace m -> Maybe (NamespaceItem m)
 lookupExpansion' keys (Namespace e) = go keys e
   where
     go [] _ = Nothing
@@ -202,24 +229,24 @@ lookupExpansion' keys (Namespace e) = go keys e
       Just (NamespaceData (Namespace n)) -> go ks n
       _ -> Nothing
 
-lookupExpansion :: Text -> Namespace m -> Maybe (SomeExpansion m)
+lookupExpansion :: Text -> Namespace m -> Maybe (NamespaceItem m)
 lookupExpansion = lookupExpansion' . splitExpansionKey
 
-insertExpansion' :: [Text] -> SomeExpansion m -> Namespace m -> Namespace m
+insertExpansion' :: [Text] -> NamespaceItem m -> Namespace m -> Namespace m
 insertExpansion' keys e (Namespace es) = Namespace $ go keys es
   where
     go [] = id
     go [k] = HMap.insert k e
     go (k : ks) =
-      flip HMap.alter k
-        $ Just
-        . NamespaceData
-        . Namespace
-        . \case
-          Just (NamespaceData (Namespace n)) -> go ks n
-          _ -> go ks mempty
+      flip HMap.alter k $
+        Just
+          . NamespaceData
+          . Namespace
+          . \case
+            Just (NamespaceData (Namespace n)) -> go ks n
+            _ -> go ks mempty
 
-insertExpansion :: Text -> SomeExpansion m -> Namespace m -> Namespace m
+insertExpansion :: Text -> NamespaceItem m -> Namespace m -> Namespace m
 insertExpansion = insertExpansion' . splitExpansionKey
 
 deleteExpansion' :: [Text] -> Namespace m -> Namespace m

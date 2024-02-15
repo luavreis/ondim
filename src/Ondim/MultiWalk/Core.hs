@@ -59,12 +59,12 @@ fromSomeExpansion ::
   forall a m.
   (OndimNode a, Monad m) =>
   DefinitionSite ->
-  SomeExpansion m ->
+  NamespaceItem m ->
   Either OndimFailure (Expansion m a, DefinitionSite)
 fromSomeExpansion callSite someExp =
   case someExp' of
-    (GlobalExpansion site e) -> Right (e, site)
-    (SomeExpansion t site v)
+    (PolyExpansion site e) -> Right (e, site)
+    (TypedExpansion t site v)
       | Just HRefl <- t `eqTypeRep` typeRep @a -> Right (v, site)
       | otherwise -> Left $ ExpansionWrongType (SomeTypeRep t)
     (Template _ site v) -> do
@@ -141,8 +141,8 @@ expCtx name site (Ondim ctx) = do
     then -- To avoid recursive expansions
       throwException MaxExpansionDepthExceeded
     else
-      Ondim
-        $ local
+      Ondim $
+        local
           ( \s ->
               s
                 { depth = depth s + 1,

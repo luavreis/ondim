@@ -2,7 +2,7 @@
 
 module Ondim.Targets.HTML.Load (loadHtml) where
 
-import Ondim.Extra.Loading (LoadConfig (..), loadFnSimple)
+import Ondim.Loading (LoadConfig (..), loadFnSimple)
 import Ondim.Targets.HTML.Expansions (defaultState)
 import Ondim.Targets.HTML.Instances
 import Ondim.Targets.HTML.Parser (parseLBS)

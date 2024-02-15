@@ -1,4 +1,9 @@
 packages: .
+          html
+          latex
+          pandoc
+          json
+          whiskers
 
 source-repository-package
   type: git

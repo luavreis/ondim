@@ -2,11 +2,16 @@
  (implemented in Ondim.MultiWalk.Core).
 -}
 module Ondim
-  ( -- * Nodes
+  (-- * Monad
+    Ondim,
+    runOndimWith,
+    evalOndimWith,
+    evalOndim,
+
+    -- * Nodes
     children,
     attributes,
     identify,
-    renderNode,
     ondimCast,
     OndimNode,
 
@@ -16,38 +21,8 @@ module Ondim
     expandSubstructures,
 
     -- * Data types
-    OndimState (..),
     Expansion,
-    GlobalExpansion,
-    SomeExpansion,
-    Namespace,
-
-    -- * Monad
-    Ondim,
-    runOndimWith,
-    evalOndimWith,
-    evalOndim,
-
-    -- * Rendering
-    renderNodeOrError,
-    renderTemplateOrError,
-
-    -- * Exceptions
-    TraceData (..),
-    ExceptionType (..),
-    OndimException (..),
-    withoutNBErrors,
-    withNBErrors,
-    throwTemplateError,
-    throwException,
-    catchException,
-    OndimFailure (..),
-    throwExpFailure,
-    catchFailure,
-    DefinitionSite (..),
-    getCurrentSite,
-    fileSite,
-    callStackSite,
+    PolyExpansion,
 
     -- * State transformations
     module Ondim.State,
@@ -62,6 +37,11 @@ module Ondim
     callExpansion,
     callTemplate,
     callText,
+
+    -- * Rendering
+    renderNode,
+    renderNodeOrError,
+    renderTemplateOrError,
 
     -- * Structure
     getSubstructure,

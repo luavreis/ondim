@@ -1,4 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE UndecidableSuperClasses #-}
@@ -21,7 +22,7 @@ import {-# SOURCE #-} Ondim.MultiWalk.Combinators
 
 class Expansible (s :: Type) where
   expandSpec ::
-    Monad m =>
+    (Monad m) =>
     Carrier s ->
     Ondim m (Carrier s)
 
@@ -38,32 +39,32 @@ instance {-# OVERLAPPABLE #-} Substructure target needle where
 
 -- * OndimNode class
 
-class
+type OndimNodeC t =
   ( HasSub GSubTag (ExpTypes t) t,
     AllMods Expansible (ExpTypes t),
     Expansible (NodeListSpec t),
     Carrier (NodeListSpec t) ~ [t],
     OndimCast t
-  ) =>
-  OndimNode t
-  where
+  )
+
+class (OndimNodeC t) => OndimNode t where
   type ExpTypes t :: Spec
   type NodeListSpec t :: Type
   type NodeListSpec t = NLDef t
   identify :: t -> Maybe Text
   identify _ = Nothing
-  attributes :: Monad m => t -> Ondim m [Attribute]
+  attributes :: (Monad m) => t -> Ondim m [Attribute]
   attributes _ = pure []
   children :: t -> [t]
   children _ = []
-  castFrom :: Typeable a => Proxy a -> Maybe (a -> [t])
+  castFrom :: (Typeable a) => Proxy a -> Maybe (a -> [t])
   castFrom _ = Nothing
   renderNode :: Maybe (t -> LByteString)
   renderNode = Nothing
   nodeAsText :: Maybe (t -> Text)
   nodeAsText = Nothing
 
-instance OndimNode a => OndimNode [a] where
+instance (OndimNode a) => OndimNode [a] where
   type ExpTypes [a] = 'SpecSelf (NodeList a)
   type NodeListSpec [a] = Trav [] (NodeList a)
   castFrom p = (one .) <$> castFrom p
@@ -82,15 +83,15 @@ instance OndimNode LByteString where
 instance OndimNode (Text, Text) where
   type ExpTypes (Text, Text) = 'SpecLeaf
 
-class Typeable a => OndimCast a where
-  ondimCast :: OndimNode b => Maybe (a -> [b])
+class (Typeable a) => OndimCast a where
+  ondimCast :: (OndimNode b) => Maybe (a -> [b])
 
 instance {-# OVERLAPPABLE #-} (Typeable a) => OndimCast a where
-  ondimCast :: forall b. OndimNode b => Maybe (a -> [b])
+  ondimCast :: forall b. (OndimNode b) => Maybe (a -> [b])
   ondimCast = castFrom Proxy
 
 instance (OndimCast a) => OndimCast [a] where
-  ondimCast :: forall b. OndimNode b => Maybe ([a] -> [b])
+  ondimCast :: forall b. (OndimNode b) => Maybe ([a] -> [b])
   ondimCast
     | Just Refl <- eqT @b @a = Just id
     | otherwise = castFrom Proxy <|> foldMap' <$> ondimCast

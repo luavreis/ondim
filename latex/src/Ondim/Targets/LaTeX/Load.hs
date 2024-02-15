@@ -2,7 +2,7 @@
 
 module Ondim.Targets.LaTeX.Load where
 
-import Ondim.Extra.Loading (LoadConfig (..), loadFnSimple)
+import Ondim.Loading (LoadConfig (..), loadFnSimple)
 import Ondim.Targets.LaTeX.Expansions (defaultState)
 import Ondim.Targets.LaTeX.Parser (parseLaTeX)
 
