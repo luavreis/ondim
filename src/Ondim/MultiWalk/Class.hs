@@ -51,16 +51,26 @@ class (OndimNodeC t) => OndimNode t where
   type ExpTypes t :: Spec
   type NodeListSpec t :: Type
   type NodeListSpec t = NLDef t
+
+  -- | Returns the name of the node as defined by the 'OndimNode' instance.
   identify :: t -> Maybe Text
   identify _ = Nothing
+
+  -- | Returns a list of attributes of the node as defined by the 'OndimNode' instance.
   attributes :: (Monad m) => t -> Ondim m [Attribute]
   attributes _ = pure []
+
+  -- | Returns the children of the node as defined by the 'OndimNode' instance.
   children :: t -> [t]
   children _ = []
+
   castFrom :: (Typeable a) => Proxy a -> Maybe (a -> [t])
   castFrom _ = Nothing
+
+  -- | Converts the node to a 'LByteString' as defined by the 'OndimNode' instance.
   renderNode :: Maybe (t -> LByteString)
   renderNode = Nothing
+
   nodeAsText :: Maybe (t -> Text)
   nodeAsText = Nothing
 

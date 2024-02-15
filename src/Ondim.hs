@@ -2,18 +2,22 @@
  (implemented in Ondim.MultiWalk.Core).
 -}
 module Ondim
-  (-- * Monad
+  ( -- * Monad
     Ondim,
     runOndimWith,
     evalOndimWith,
     evalOndim,
 
     -- * Nodes
-    children,
-    attributes,
+    OndimNode,
     identify,
     ondimCast,
-    OndimNode,
+
+    -- * Children and attributes
+    children,
+    expandChildren,
+    lookupAttr,
+    attributes,
 
     -- * Running templates
     expandNode,
@@ -30,9 +34,7 @@ module Ondim
     getExpansion,
     getTemplate,
     getNamespace,
-    getTemplate',
     getText,
-    getText',
     -- Calling
     callExpansion,
     callTemplate,
@@ -42,11 +44,6 @@ module Ondim
     renderNode,
     renderNodeOrError,
     renderTemplateOrError,
-
-    -- * Structure
-    getSubstructure,
-    expandChildren,
-    lookupAttr,
 
     -- * Auxiliary
     Attribute,
@@ -58,12 +55,11 @@ import Ondim.MultiWalk.Basic
 import Ondim.MultiWalk.Class
 import Ondim.MultiWalk.Core
 import Ondim.State
-import Ondim.MultiWalk.Substructure
 import Prelude hiding (All)
 
 -- | Runs the Ondim action with a given initial state.
 evalOndimWith ::
-  Monad m =>
+  (Monad m) =>
   OndimState m ->
   Ondim m a ->
   m (Either OndimException a)
@@ -75,7 +71,7 @@ evalOndimWith s o =
 
 -- | Runs the Ondim action with a given initial state, and also return the final state.
 runOndimWith ::
-  Monad m =>
+  (Monad m) =>
   OndimState m ->
   Ondim m a ->
   m (Either OndimException (a, OndimState m))
@@ -86,12 +82,17 @@ runOndimWith s o =
       `runStateT` s
 
 -- | Runs the Ondim action with empty initial state.
-evalOndim :: Monad m => Ondim m a -> m (Either OndimException a)
+evalOndim :: (Monad m) => Ondim m a -> m (Either OndimException a)
 evalOndim = evalOndimWith mempty
 
 -- Children
 
--- | Returns the children of a node after expanding them.
+{- | Returns the children of a node after expanding them.
+
+@
+'expandChildren' = 'expandNodes' . 'children'
+@
+-}
 expandChildren ::
   forall t m.
   (OndimNode t, Monad m) =>
@@ -109,7 +110,7 @@ lookupAttr ::
 lookupAttr key = fmap (L.lookup key) . attributes
 
 -- | Render node as bytestring, if possible, or fail.
-renderNodeOrError :: (HasCallStack, Monad m) => OndimNode a => a -> Ondim m LByteString
+renderNodeOrError :: (HasCallStack, Monad m) => (OndimNode a) => a -> Ondim m LByteString
 renderNodeOrError =
   case renderNode of
     Just render -> return . render
@@ -133,7 +134,7 @@ callTemplate name = do
   either (throwExpFailure @t name) return exps
 
 -- | Either applies text 'name', or throws a failure if it does not exist.
-callText :: Monad m => Text -> Ondim m Text
+callText :: (Monad m) => Text -> Ondim m Text
 callText name = do
   exps <- getText name
   either (throwExpFailure @Text name) return exps

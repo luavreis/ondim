@@ -81,10 +81,18 @@ type PolyExpansion m = forall a. (OndimNode a, Monad m) => Expansion m a
 
 -- | An opaque datatype that should be regarded as a sum of four possible types:
 --
---   1. Typed expansions, i.e., expansions that apply to a single type (use
---   'Ondim.State.typedExpansion' to create).
+--   1. Typed expansions, i.e., expansions that apply to a single type (use the
+--   'Ondim.State.typedExpansion' constructor).
 --
---   2. Polymorphic expansions
+--   2. Polymorphic expansions, i.e., expansions that are polymophic over types
+--   with 'OndimNode' instances (use the 'Ondim.State.polyExpansion'
+--   constructor).
+--
+--   3. Templates, i.e., raw node data that represents templates. (use the
+--   'Ondim.State.templateData' constructor).
+--
+--   4. Namespaces, i.e., nested namespaces. (use the 'Ondim.State.namespace'
+--   constructor).
 data NamespaceItem m where
   TypedExpansion :: TypeRep a -> DefinitionSite -> Expansion m a -> NamespaceItem m
   PolyExpansion :: DefinitionSite -> PolyExpansion m -> NamespaceItem m

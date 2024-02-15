@@ -2,7 +2,6 @@
 
 module Ondim.State
   ( -- * Namespace maps
-
     NamespaceMap,
     binding,
     mapToNamespace,
@@ -113,6 +112,7 @@ infixr 0 #<>
 (#<>) :: Text -> Maybe (NamespaceItem m) -> NamespaceMap m
 name #<> ex = NamespaceMapM $ modify' ((name, ex) :)
 
+-- | Remove a previously added item from the 'NamespaceMap'.
 unbind :: Text -> NamespaceMap m
 unbind k = k #<> Nothing
 
@@ -140,6 +140,7 @@ type NamespaceMap m = NamespaceMapM m ()
 
 infixr 0 #:
 
+-- | Infix to add a 'NamespaceItem' to a 'NamespaceMap'.
 (#:) :: Text -> NamespaceItem m -> NamespaceMap m
 name #: ex = name #<> Just ex
 
@@ -151,6 +152,12 @@ typedExpansion' = TypedExpansion typeRep
 
 infixr 0 ##
 
+{- | Infix to add an 'Expansion' to a 'NamespaceMap'.
+
+@
+name '##' expansion = name '#:' 'typedExpansion' expansion
+@
+-}
 (##) :: (HasCallStack, Typeable t) => Text -> Expansion m t -> NamespaceMap m
 name ## ex = name #: typedExpansion ex
 
@@ -162,6 +169,13 @@ templateData' = Template typeRep
 
 infixr 0 #%
 
+{- | Infix to add a template (any type with an 'OndimNode' instance) to a
+   'NamespaceMap'.
+
+@
+name '#%' template = name '#:' 'templateData' template
+@
+-}
 (#%) :: (HasCallStack, OndimNode a) => Text -> a -> NamespaceMap m
 name #% ex = name #: templateData ex
 
@@ -173,8 +187,15 @@ textData' = templateData'
 
 infixr 0 #@
 
+{- | Infix to add a textual data to a 'NamespaceMap'. Just a specialized version
+   of '#%'.
+
+@
+name '#@' text = name '#:' 'textData' text
+@
+-}
 (#@) :: (HasCallStack) => Text -> Text -> NamespaceMap m
-name #@ ex = name #% ex
+(#@) = (#%)
 
 polyExpansion :: (HasCallStack) => PolyExpansion m -> NamespaceItem m
 polyExpansion = PolyExpansion callStackSite
@@ -184,6 +205,12 @@ polyExpansion' = PolyExpansion
 
 infixr 0 #*
 
+{- | Infix to add a t'PolyExpansion' to a 'NamespaceMap'.
+
+@
+name '#*' expansion = name '#:' 'polyExpansion' expansion
+@
+-}
 (#*) :: (HasCallStack) => Text -> PolyExpansion m -> NamespaceMap m
 name #* ex = name #: polyExpansion ex
 
@@ -202,6 +229,12 @@ namespace' = NamespaceData
 
 infixr 0 #.
 
+{- | Infix to nest a 'NamespaceMap' inside a 'NamespaceMap'.
+
+@
+name '#.' nsMap = name '#:' 'namespace' nsMap
+@
+-}
 (#.) :: Text -> NamespaceMap m -> NamespaceMap m
 name #. ex = name #: namespace ex
 

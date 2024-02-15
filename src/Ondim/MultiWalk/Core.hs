@@ -160,8 +160,8 @@ expCtx name site (Ondim ctx) = do
 
   More precisely, if the node name matches the name of a bound expansion, then
   it feeds the node directly into the expansion. Otherwise, it runs
-  @liftSubstuctures@ on the node, which essentially amounts to running
-  @liftNode@ on each substructure.
+  'expandSubstructures' on the node, which essentially amounts to running
+  'expandNode' on each substructure.
 -}
 expandNode ::
   forall t m.
