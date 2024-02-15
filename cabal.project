@@ -1,9 +1,9 @@
 packages: .
-          html
-          latex
-          pandoc
-          json
-          whiskers
+          ondim-html
+          ondim-latex
+          ondim-pandoc
+          ondim-json
+          ondim-whiskers
 
 constraints:
   yaml >= 0.11.11,
