@@ -26,11 +26,11 @@ library
   -- other-modules:
 
   build-depends:
-    , base                 >=4.14 && <5
+    , base                 >=4.14  && <5
     , megaparsec
     , ondim
     , relude
-    , text-builder-linear
+    , text-builder-linear  >=0.1.2 && <0.2
 
   other-modules:      Ondim.Targets.LaTeX.Parser
   exposed-modules:
