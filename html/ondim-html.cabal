@@ -33,7 +33,7 @@ library
     , lucid
     , ondim
     , relude
-    , xml-conduit
+    , xml-conduit   >=1.9.0 && <1.10
     , xml-types
 
   exposed-modules:
