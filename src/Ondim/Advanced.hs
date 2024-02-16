@@ -8,6 +8,8 @@ module Ondim.Advanced
     -- * Combinators
     module Ondim.MultiWalk.Combinators,
 
+    expandSpecList,
+
     -- * Substructures
     module Ondim.MultiWalk.Substructure,
   ) where
@@ -15,3 +17,4 @@ module Ondim.Advanced
 import Ondim.MultiWalk.Class (OndimNode (..))
 import Ondim.MultiWalk.Combinators
 import Ondim.MultiWalk.Substructure
+import Ondim.MultiWalk.Core (expandSpecList)

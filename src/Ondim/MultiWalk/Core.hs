@@ -8,10 +8,8 @@ module Ondim.MultiWalk.Core
     expandSpecList,
     getExpansion,
     getTemplate,
-    getTemplate',
     getNamespace,
     getText,
-    getText',
   ) where
 
 import Control.MultiWalk.HasSub (AllMods, GSubTag)
@@ -82,9 +80,9 @@ fromSomeExpansion callSite someExp =
             v
       _nonNamespace -> someExp
 
-getText' :: forall m. (Monad m) => [Text] -> Ondim m (Either OndimFailure Text)
-getText' name = do
-  mbValue <- Ondim $ gets (lookupExpansion' name . expansions)
+getText :: forall m. (Monad m) => Text -> Ondim m (Either OndimFailure Text)
+getText name = do
+  mbValue <- Ondim $ gets (lookupExpansion name . expansions)
   case mbValue of
     Just (Template trep site thing)
       | Just HRefl <- typeRep @Text `eqTypeRep` trep -> return $ Right thing
@@ -94,20 +92,14 @@ getText' name = do
     Just _ -> return $ Left (FailureOther "Identifier not bound to a template.")
     Nothing -> return $ Left NotBound
 
-getText :: forall m. (Monad m) => Text -> Ondim m (Either OndimFailure Text)
-getText = getText' . splitExpansionKey
-
-getTemplate' :: forall m a. (OndimNode a, Monad m) => [Text] -> Ondim m (Either OndimFailure [a])
-getTemplate' name = do
-  mbValue <- Ondim $ gets (lookupExpansion' name . expansions)
+getTemplate :: forall m a. (OndimNode a, Monad m) => Text -> Ondim m (Either OndimFailure [a])
+getTemplate name = do
+  mbValue <- Ondim $ gets (lookupExpansion name . expansions)
   case mbValue of
     Just (Template _ site thing) ->
       bimapM return id $ fromTemplate site thing
     Just _ -> return $ Left (FailureOther "Identifier not bound to a template.")
     Nothing -> return $ Left NotBound
-
-getTemplate :: (OndimNode a, Monad m) => Text -> Ondim m (Either OndimFailure [a])
-getTemplate = getTemplate' . splitExpansionKey
 
 getNamespace ::
   (Monad m) =>
@@ -182,6 +174,7 @@ expandNode node = do
     continue = one <$> expandSubstructures node
 {-# INLINEABLE expandNode #-}
 
+-- | Expand a list of nodes and concatenate results.
 expandNodes ::
   forall m t.
   (OndimNode t, Monad m) =>
@@ -190,13 +183,14 @@ expandNodes ::
 expandNodes = expandSpec @(NodeListSpec t)
 {-# INLINEABLE expandNodes #-}
 
--- | Run only the substructures of a node.
+-- | Expand only the substructures of a node.
 expandSubstructures :: forall m t. (Monad m, OndimNode t) => t -> Ondim m t
 expandSubstructures = expandSpecList @(ExpTypes t)
 {-# INLINEABLE expandSubstructures #-}
 
 -- * Lifting functions
 
+-- | Expand a list of nodes according to a spec list.
 expandSpecList ::
   forall ls t m.
   ( Monad m,

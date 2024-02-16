@@ -1,3 +1,7 @@
+{- | Here we define a "standard library" of useful expansions. Examples in the
+   Haddocks are given for HTML, but they work anagously for any supported
+   format.
+-}
 module Ondim.Extra.Standard
   ( standardMap,
     bind,
@@ -191,6 +195,6 @@ bind node = do
       else return $ children node
   case getSingleAttr "id" attrs of
     Just name -> do
-      putSomeExpansion name $ templateData' defSite thing
+      putSomeExpansion name . Just $ templateData' defSite thing
       pure []
     Nothing -> throwTemplateError "No name for expansion"

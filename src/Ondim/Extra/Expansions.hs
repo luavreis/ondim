@@ -28,8 +28,8 @@ getSingleAttr' name node =
     . getSingleAttr name
     =<< attributes node
 
-identifiesAs :: (OndimNode t) => [Text] -> t -> Bool
-identifiesAs n = (Just n ==) . fmap splitExpansionKey . identify
+identifiesAs :: (OndimNode t) => Text -> t -> Bool
+identifiesAs n = (Just n ==) . identify
 
 -- * Lists
 
@@ -105,10 +105,10 @@ ifElse ::
   Expansion m t
 ifElse cond node = do
   let els = children node
-      yes = filter (not . identifiesAs ["else"]) els
+      yes = filter (not . identifiesAs "else") els
       no =
         maybe [] children $
-          find (identifiesAs ["else"]) els
+          find (identifiesAs "else") els
   if cond
     then expandNodes yes
     else expandNodes no
@@ -124,13 +124,13 @@ switchWithDefault ::
 switchWithDefault tag node = do
   let els = children node
   match <- (`findM` els) \x -> do
-    if identifiesAs ["case"] x
+    if identifiesAs "case" x
       then do
         caseTag <- getSingleAttr' "id" x
         return $ Just caseTag == tag
       else return False
   fromMaybe (pure []) do
-    child <- match <|> find (identifiesAs ["default"]) els
+    child <- match <|> find (identifiesAs "default") els
     pure $ expandChildren child
   where
     findM p = foldr (\x -> ifM (p x) (pure $ Just x)) (pure Nothing)

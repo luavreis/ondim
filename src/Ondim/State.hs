@@ -43,20 +43,16 @@ module Ondim.State
     modifyOndimS,
     putOndimS,
 
-    -- ** Modify parts of the state
+    -- ** Manipulate the state by keys
     withSomeExpansion,
     putSomeExpansion,
     withoutExpansions,
     withNamespace,
 
     -- ** Altering namespaces
-    splitExpansionKey,
     lookupExpansion,
     insertExpansion,
     deleteExpansion,
-    lookupExpansion',
-    insertExpansion',
-    deleteExpansion',
   )
 where
 
@@ -71,6 +67,7 @@ import Type.Reflection (typeRep)
 
 -- State manipulation
 
+-- | Get the Ondim state.
 getOndimS :: (Monad m) => Ondim m (OndimState m)
 getOndimS = Ondim get
 
@@ -80,6 +77,7 @@ modifyOndimS = Ondim . modify'
 putOndimS :: (Monad m) => OndimState m -> Ondim m ()
 putOndimS = Ondim . put
 
+-- | Either bind or unbind an expansion locally.
 withSomeExpansion ::
   (Monad m) =>
   Text ->
@@ -93,19 +91,21 @@ withSomeExpansion name ex st = do
   where
     insOrDel = maybe (deleteExpansion name) (insertExpansion name)
 
--- | "Bind" new namespace locally.
+-- | Bind a namespace locally.
 withNamespace :: (Monad m) => Namespace m -> Ondim m a -> Ondim m a
 withNamespace (Namespace exps) o =
   foldr (\(k, v) -> withSomeExpansion k (Just v)) o (HMap.toList exps)
 
--- | "Unbind" many expansions locally.
+-- | Unbind a list of expansions locally.
 withoutExpansions :: (Monad m) => [Text] -> Ondim m a -> Ondim m a
 withoutExpansions names o = foldr (`withSomeExpansion` Nothing) o names
 
--- | Put a new expansion into the local state, modifying the scope.
-putSomeExpansion :: (Monad m) => Text -> NamespaceItem m -> Ondim m ()
-putSomeExpansion key ex =
-  modifyOndimS \s -> s {expansions = insertExpansion key ex (expansions s)}
+-- | Either put or delete an expansion from the state.
+putSomeExpansion :: (Monad m) => Text -> Maybe (NamespaceItem m) -> Ondim m ()
+putSomeExpansion name ex =
+  modifyOndimS \s -> s {expansions = insOrDel ex (expansions s)}
+  where
+    insOrDel = maybe (deleteExpansion name) (insertExpansion name)
 
 infixr 0 #<>
 
@@ -260,7 +260,8 @@ lookupExpansion' keys (Namespace e) = go keys e
     go [k] m = HMap.lookup k m
     go (k : ks) m = case HMap.lookup k m of
       Just (NamespaceData (Namespace n)) -> go ks n
-      _ -> Nothing
+      Just {} -> Nothing
+      Nothing -> Nothing
 
 lookupExpansion :: Text -> Namespace m -> Maybe (NamespaceItem m)
 lookupExpansion = lookupExpansion' . splitExpansionKey
@@ -277,7 +278,7 @@ insertExpansion' keys e (Namespace es) = Namespace $ go keys es
           . Namespace
           . \case
             Just (NamespaceData (Namespace n)) -> go ks n
-            _ -> go ks mempty
+            _notNamespace -> go ks mempty
 
 insertExpansion :: Text -> NamespaceItem m -> Namespace m -> Namespace m
 insertExpansion = insertExpansion' . splitExpansionKey

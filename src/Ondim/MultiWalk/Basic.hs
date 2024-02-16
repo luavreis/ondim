@@ -77,6 +77,7 @@ type Expansion m t = t -> Ondim m [t]
 -}
 newtype Namespace m = Namespace {getExpansions :: HashMap Text (NamespaceItem m)}
 
+-- | An expansion that is polymorphic on the type.
 type PolyExpansion m = forall a. (OndimNode a, Monad m) => Expansion m a
 
 -- | An opaque datatype that should be regarded as a sum of four possible types:
@@ -175,7 +176,10 @@ data OndimFailure
 data OndimException = OndimException ExceptionType TraceData
   deriving (Show, Exception)
 
--- | Run subcomputation without (most) "not bound" errors.
+-- | Run subcomputation without (most) "not bound" errors. More specifically, if
+-- 'Ondim.expandNode' finds a node whose identifier is not bound, it will not
+-- throw an error and instead treat it as if it had no identifier, i.e., it will
+-- ignore it and recurse into the substructures.
 withoutNBErrors :: (Monad m) => Ondim m a -> Ondim m a
 withoutNBErrors = Ondim . local f . unOndimT
   where
