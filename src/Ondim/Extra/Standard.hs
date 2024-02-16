@@ -38,7 +38,7 @@ standardMap = do
 {- | This expansion expands its children depending on whether all the specified
    expansions are bound or not.
 
-   > <e:bind joseph/>
+   > <e:bind id=joseph/>
    >
    > <e:if id="joseph,maria">
    >   'joseph' AND 'maria' are bound
@@ -58,7 +58,7 @@ ifBound node = do
 {- | This expansion expands its children depending on whether any of the specified
    expansions are bound or not.
 
-   > <e:bind joseph/>
+   > <e:bind id=joseph/>
    >
    > <e:any id="joseph,maria">
    >   'joseph' OR 'maria' are bound
@@ -78,9 +78,9 @@ anyBound node = do
 {- | This expansion allows you to case match on the (textual) value of another
    expansion, or return a (optional) default clause.
 
-   > <e:bind name>joseph</e:bind>
+   > <e:bind id=name>joseph</e:bind>
    >
-   > <e:match id="name">
+   > <e:match id=name>
    >   <e:case maria>A dress</e:case>
    >   <e:case joseph>A nice hat</e:case>
    >   <e:default>Some shoes</e:default>
@@ -103,8 +103,8 @@ ignore = const $ pure []
 
 {- | This expansion renames other expansions inside of it.
 
-   > <e:bind hello>Hello,</e:bind>
-   > <e:bind world>world.</e:bind>
+   > <e:bind id=hello>Hello,</e:bind>
+   > <e:bind id=world>world.</e:bind>
    >
    > <e:with new-hello="hello" new-world="world">
    >   <e:new-hello /> <e:new-world />
@@ -121,8 +121,8 @@ open node = do
 
 {- | This expansion renames other expansions inside of it.
 
-   > <e:bind hello>Hello,</e:bind>
-   > <e:bind world>world.</e:bind>
+   > <e:bind id=hello>Hello,</e:bind>
+   > <e:bind id=world>world.</e:bind>
    >
    > <e:with new-hello="hello" new-world="world">
    >   <e:new-hello /> <e:new-world />
@@ -142,11 +142,11 @@ with node = do
 
   For this reason, it can be used to call other expansions with "arguments":
 
-   > <e:bind animal-entry>There is a <e:animal /> with age <e:age /></e:bind>
+   > <e:bind id=animal-entry>There is a <e:animal /> with age <e:age /></e:bind>
    >
    > <e:scope>
-   >   <e:bind animal>Lion</e:bind>
-   >   <e:bind age>9 years</e:bind>
+   >   <e:bind id=animal>Lion</e:bind>
+   >   <e:bind id=age>9 years</e:bind>
    >   <e:animal-entry />
    > <e:scope/>
    >
@@ -159,10 +159,10 @@ scope node = do
 
 {- | This expansion calls other expansions.
 
-   > <e:bind test>
+   > <e:bind id=test>
    >   Hello, world. <e:caller.children />
    > </e:bind>
-   > <e:call id="test">
+   > <e:call id=test>
    >   How are you doing?
    > </e:call>
 -}
@@ -174,7 +174,7 @@ call node = do
 {- | This expansion adds the content of the node's children to the state as a
   template. If you're familiar with Heist, it's like Heist's @bind@ splice.
 
-   > <e:bind greet>
+   > <e:bind id=greet>
    >   Hello, <e:caller.attrs.name />.
    > </e:bind>
    >
